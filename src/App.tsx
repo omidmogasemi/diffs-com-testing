@@ -1,49 +1,83 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { FileDiff, FileContents } from "@pierre/diffs/react";
+import { parseDiffFromFile, getFiletypeFromFileName } from "@pierre/diffs";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [leftFile, setLeftFile] = useState<FileContents | null>(null);
+  const [rightFile, setRightFile] = useState<FileContents | null>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    side: "left" | "right"
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const contents = await file.text();
+    const lang = getFiletypeFromFileName(file.name) || "text";
+
+    const fileContents: FileContents = {
+      name: file.name,
+      contents,
+      lang,
+    };
+
+    if (side === "left") {
+      setLeftFile(fileContents);
+    } else {
+      setRightFile(fileContents);
+    }
+  };
+
+  const fileDiff = leftFile && rightFile
+    ? parseDiffFromFile(leftFile, rightFile)
+    : null;
 
   return (
     <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+      <h1>File Diff Viewer</h1>
 
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="upload-section">
+        <div className="upload-box">
+          <label htmlFor="left-file">Left File (Original)</label>
+          <input
+            type="file"
+            id="left-file"
+            onChange={(e) => handleFileUpload(e, "left")}
+          />
+          {leftFile && <span className="file-name">{leftFile.name}</span>}
+        </div>
+
+        <div className="upload-box">
+          <label htmlFor="right-file">Right File (Modified)</label>
+          <input
+            type="file"
+            id="right-file"
+            onChange={(e) => handleFileUpload(e, "right")}
+          />
+          {rightFile && <span className="file-name">{rightFile.name}</span>}
+        </div>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+      {fileDiff && (
+        <div className="diff-container">
+          <FileDiff
+            fileDiff={fileDiff}
+            options={{
+              diffStyle: "split",
+              theme: {
+                dark: "github-dark",
+                light: "github-light",
+              },
+            }}
+          />
+        </div>
+      )}
+
+      {!fileDiff && (
+        <p className="hint">Upload two files to see the diff</p>
+      )}
     </main>
   );
 }
