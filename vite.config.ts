@@ -8,9 +8,10 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
-  // The diffs highlighter runs in a module worker that Rollup code-splits.
-  // Vite's default worker format is `iife`, which cannot code-split, so a
-  // production build fails without this.
+  // @pierre/diffs 1.x ships a worker entry that lazily imports its Oniguruma
+  // WASM engine. Vite's default `iife` worker format cannot code-split, so the
+  // bundle has to be ESM. main.tsx already constructs the worker with
+  // `{ type: "module" }`, which is what this format produces.
   worker: {
     format: "es",
   },
