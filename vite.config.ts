@@ -8,6 +8,13 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // The diffs highlighter runs in a module worker that Rollup code-splits.
+  // Vite's default worker format is `iife`, which cannot code-split, so a
+  // production build fails without this.
+  worker: {
+    format: "es",
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors

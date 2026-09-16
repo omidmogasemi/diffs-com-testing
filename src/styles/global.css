@@ -149,6 +149,12 @@ a {
   font-size: 0.8rem;
 }
 
+/* The gallery needs more than the shell's reading width; it opts in rather
+   than every page getting wider. */
+.app-main:has(.page--wide) {
+  max-width: 1500px;
+}
+
 /* --- Page primitives ---------------------------------------------------- */
 
 .page__title {
