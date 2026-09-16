@@ -15,7 +15,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@pierre/diffs": "^1.0.6",
+    "@pierre/diffs": "^1.4.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "react": "^18.3.1",

@@ -8,6 +8,14 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // @pierre/diffs 1.x ships a worker entry that lazily imports its Oniguruma
+  // WASM engine. Vite's default `iife` worker format cannot code-split, so the
+  // bundle has to be ESM. main.tsx already constructs the worker with
+  // `{ type: "module" }`, which is what this format produces.
+  worker: {
+    format: "es",
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors
