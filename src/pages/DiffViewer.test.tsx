@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { WorkerPoolContextProvider } from "@pierre/diffs/react";
 import AppRoutes from "../routes";
 import { CONTROLS, DEFAULT_OPTIONS } from "../diff/options";
+import { samples } from "../fixtures";
 
 /**
  * jsdom has no module-worker support, so the pool gets an inert stub. These
@@ -86,9 +87,9 @@ describe("feature gallery", () => {
   it("disables the diff-only controls on the single-file viewer", () => {
     renderGallery();
 
-    // The last sample is the single file, which only offers the File surface.
+    // A `file` sample only offers the File surface.
     fireEvent.change(screen.getByLabelText("Content"), {
-      target: { value: "single" },
+      target: { value: "merge-conflict" },
     });
 
     expect(screen.getByLabelText("Component")).toHaveValue("file");
@@ -96,18 +97,29 @@ describe("feature gallery", () => {
     expect(screen.getByLabelText("overflow")).toBeEnabled();
   });
 
+  it("offers every fixture in the content picker", () => {
+    renderGallery();
+    const content = screen.getByLabelText("Content");
+
+    for (const sample of samples) {
+      expect(
+        within(content).getByRole("option", { name: sample.label }),
+      ).toBeInTheDocument();
+    }
+  });
+
   it("offers PatchDiff only for a single-file patch", () => {
     renderGallery();
     const content = screen.getByLabelText("Content");
     const component = screen.getByLabelText("Component");
 
-    fireEvent.change(content, { target: { value: "patch-single" } });
+    fireEvent.change(content, { target: { value: "single-file-patch" } });
     expect(
       within(component).getByRole("option", { name: "PatchDiff" }),
     ).toBeInTheDocument();
 
     // A two-file patch makes PatchDiff throw, so it is not offered at all.
-    fireEvent.change(content, { target: { value: "patch-multi" } });
+    fireEvent.change(content, { target: { value: "multi-file-patch" } });
     expect(
       within(component).queryByRole("option", { name: "PatchDiff" }),
     ).not.toBeInTheDocument();

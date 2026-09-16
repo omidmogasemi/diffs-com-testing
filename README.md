@@ -38,10 +38,41 @@ src/
   App.tsx               root layout (header / <Outlet /> / footer)
   config.ts             APP_NAME
   components/           Header, Nav, Footer
+  fixtures/             sample files the Diff Viewer can load
   pages/                Home, DiffViewer, About, NotFound
   styles/global.css     design tokens + shell styles
   test/setup.ts         vitest setup
 ```
+
+### Sample files
+
+The Diff Viewer has a **Sample** picker above the upload boxes, so a feature can
+be tried without finding two files first. The samples live in `src/fixtures/`:
+
+```
+src/fixtures/
+  index.ts     the Sample union and the list the picker renders
+  pairs.ts     before/after file pairs (TypeScript, JSON, Markdown, a rename)
+  patch.ts     unified patches, one single-file and one over four files
+  conflict.ts  a file left mid-merge, conflict markers and all
+  large.ts     a generated ~1,500-line file, plus an edited copy
+```
+
+A sample's `kind` is the way `@pierre/diffs` takes that input:
+
+| kind          | rendered with           | note                                               |
+| ------------- | ----------------------- | -------------------------------------------------- |
+| `pair`        | `FileDiff`              | via `parseDiffFromFile(oldFile, newFile)`          |
+| `file`        | `File`                  | one file, no comparison                            |
+| `patch`       | `PatchDiff`             | single-file patches only — it throws on wider ones |
+| `multi-patch` | one `FileDiff` per file | split with `parsePatchFiles` first                 |
+
+To add one, append it to `samples` in `src/fixtures/index.ts`; the picker and
+the fixture tests both read from that array.
+
+The large file is generated rather than checked in, so it does not dominate the
+repository or every search through it. Generation is deterministic, which keeps
+the diff against its edited copy to the edits alone.
 
 ### Adding a page
 

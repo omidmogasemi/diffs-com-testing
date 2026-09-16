@@ -25,7 +25,7 @@ import {
   poolRenderOptions,
   type GalleryOptions,
 } from "../diff/options";
-import { SAMPLES, type Sample } from "../diff/samples";
+import { samples, type Sample } from "../fixtures";
 import "./DiffViewer.css";
 
 /** The component the preview pane mounts. */
@@ -55,16 +55,16 @@ const SURFACES: Record<SurfaceId, { label: string; help: string }> = {
   },
 };
 
-function surfacesFor(sample: Sample, patchFileCount: number): SurfaceId[] {
+function surfacesFor(sample: Sample): SurfaceId[] {
   switch (sample.kind) {
     case "pair":
       return ["file-diff", "multi-file-diff", "file"];
     case "patch":
-      // PatchDiff insists on exactly one file diff, so it is only an option
-      // when the patch actually holds one.
-      return patchFileCount === 1
-        ? ["patch-diff", "patch-files"]
-        : ["patch-files"];
+      return ["patch-diff", "patch-files"];
+    case "multi-patch":
+      // PatchDiff insists on exactly one file diff and throws otherwise, so a
+      // wider patch is only renderable once it has been split.
+      return ["patch-files"];
     case "file":
       return ["file"];
   }
@@ -77,7 +77,7 @@ const MAX_EVENTS = 40;
 
 export default function DiffViewer() {
   const [options, setOptions] = useState<GalleryOptions>(DEFAULT_OPTIONS);
-  const [sampleId, setSampleId] = useState<string>(SAMPLES[0].id);
+  const [sampleId, setSampleId] = useState<string>(samples[0].id);
   const [surfaceId, setSurfaceId] = useState<SurfaceId>("file-diff");
   const [leftFile, setLeftFile] = useState<FileContents | null>(null);
   const [rightFile, setRightFile] = useState<FileContents | null>(null);
@@ -100,6 +100,7 @@ export default function DiffViewer() {
     return {
       id: UPLOAD_ID,
       label: "Your files",
+      description: "The two files you picked, compared as a pair.",
       kind: "pair",
       oldFile: leftFile,
       newFile: rightFile,
@@ -108,20 +109,18 @@ export default function DiffViewer() {
 
   const sample: Sample =
     (sampleId === UPLOAD_ID ? uploadSample : null) ??
-    SAMPLES.find((s) => s.id === sampleId) ??
-    SAMPLES[0];
+    samples.find((s) => s.id === sampleId) ??
+    samples[0];
 
-  // Parsing is what tells us how many files a patch holds, and that decides
-  // which surfaces can render it.
   const patchFiles = useMemo(
     () =>
-      sample.kind === "patch"
+      sample.kind === "patch" || sample.kind === "multi-patch"
         ? parsePatchFiles(sample.patch).flatMap((parsed) => parsed.files)
         : [],
     [sample],
   );
 
-  const available = surfacesFor(sample, patchFiles.length);
+  const available = surfacesFor(sample);
   const surface = available.includes(surfaceId) ? surfaceId : available[0];
 
   // Reset the selection when what we are looking at changes: line 12 of one
@@ -381,16 +380,14 @@ function SourcePicker({
         value={hasUpload && sampleId === UPLOAD_ID ? UPLOAD_ID : sample.id}
         onChange={(e) => onSelect(e.target.value)}
       >
-        {SAMPLES.map((s) => (
+        {samples.map((s) => (
           <option key={s.id} value={s.id}>
             {s.label}
           </option>
         ))}
         {hasUpload && <option value={UPLOAD_ID}>Your files</option>}
       </select>
-      {sample.description && (
-        <p className="picker__help">{sample.description}</p>
-      )}
+      <p className="picker__help">{sample.description}</p>
     </div>
   );
 }
